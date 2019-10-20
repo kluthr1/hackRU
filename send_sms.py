@@ -2,6 +2,10 @@ from flask import Flask, request
 from twilio.twiml.messaging_response import Message, MessagingResponse
 import check_if_enough_money
 
+import json    # or `import simplejson as json` if on Python < 2.6
+import http.client
+
+
 app = Flask(__name__)
 
 status = -1
@@ -55,6 +59,31 @@ def get_price(string):
             if x["price"]>0.0:
                 return (x["price"], x["productTitle"])
         return (0.0, "n/a")
+
+
+def get_price(string):
+
+    conn = http.client.HTTPSConnection("axesso-axesso-amazon-data-service-v1.p.rapidapi.com")
+
+    headers = {
+        'x-rapidapi-host': "axesso-axesso-amazon-data-service-v1.p.rapidapi.com",
+        'x-rapidapi-key': "4vB59oWlqGmsh8ojOArDODrvo9fKp1hGN3ojsnJeIOXsP621LQ"
+    }
+
+    conn.request("GET", "/amz/amazon-search-by-keyword?keyword="+string+"&domainCode=com&sortBy=date-desc-rank&page=1", headers=headers)
+
+    res = conn.getresponse()
+    data = res.read()
+
+    string = data.decode("utf-8")
+    json_string = string
+    obj = json.loads(json_string)   
+    for x in obj['foundProductDetails']:
+        if x['responseStatus'] =="PRODUCT_FOUND_RESPONSE":
+            if x["price"]>0.0:
+                return (x["price"], x["productTitle"])
+        return (0.0, "n/a")
+        
 
 @app.route('/sms', methods=['POST'])
 def sms():
@@ -118,6 +147,8 @@ def sms():
     else:
         resp.message(responses[message])
 
+
+    
     return str(resp)
 
 if __name__ == '__main__':
