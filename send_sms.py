@@ -73,10 +73,7 @@ def sms():
             resp.message("I couldn't find the account, run it by me again.")
     elif status == 4:
         if message == "check my balance" or message == "what's my balance" or message == "balance":
-            
-
-
-
+            x=0
     elif message not in responses:
         resp.message("I don't understand. Please try 'Find my bank account' or 'Good to see you'")
     else:
