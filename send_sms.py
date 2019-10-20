@@ -4,6 +4,7 @@ import check_if_enough_money
 
 import json    # or `import simplejson as json` if on Python < 2.6
 import http.client
+import random
 
 
 app = Flask(__name__)
@@ -33,12 +34,14 @@ responses = {
     "long time no see":"Have I seen you before?",
     "it's been a while":"Yes, it has.",
     "whazzup":"Wassup!",
-    "are you sure":"YES"
+    "are you sure":"YES",
     "yes":"No."
 }
 
-def get_price(string):
 
+def get_price(r_string):
+    string= r_string.strip(" ")
+    string  = ("%").join(string.split(" "))
     conn = http.client.HTTPSConnection("axesso-axesso-amazon-data-service-v1.p.rapidapi.com")
 
     headers = {
@@ -50,33 +53,10 @@ def get_price(string):
 
     res = conn.getresponse()
     data = res.read()
-
-    string = data.decode("utf-8")
-    json_string = string
-    obj = json.loads(json_string)   
-    for x in obj['foundProductDetails']:
-        if x['responseStatus'] =="PRODUCT_FOUND_RESPONSE":
-            if x["price"]>0.0:
-                return (x["price"], x["productTitle"])
-        return (0.0, "n/a")
-
-
-def get_price(string):
-
-    conn = http.client.HTTPSConnection("axesso-axesso-amazon-data-service-v1.p.rapidapi.com")
-
-    headers = {
-        'x-rapidapi-host': "axesso-axesso-amazon-data-service-v1.p.rapidapi.com",
-        'x-rapidapi-key': "4vB59oWlqGmsh8ojOArDODrvo9fKp1hGN3ojsnJeIOXsP621LQ"
-    }
-
-    conn.request("GET", "/amz/amazon-search-by-keyword?keyword="+string+"&domainCode=com&sortBy=date-desc-rank&page=1", headers=headers)
-
-    res = conn.getresponse()
-    data = res.read()
-
-    string = data.decode("utf-8")
-    json_string = string
+    print(string)
+    string2 = data.decode("utf-8")
+    json_string = string2
+    print(string2)
     obj = json.loads(json_string)   
     for x in obj['foundProductDetails']:
         if x['responseStatus'] =="PRODUCT_FOUND_RESPONSE":
@@ -84,22 +64,43 @@ def get_price(string):
                 return (x["price"], x["productTitle"])
         return (0.0, "n/a")
         
+need_money_img = ['https://media.giphy.com/media/h8yeWWvhwVdsI/giphy.gif', 'https://media.giphy.com/media/UufYcEW1dYfNo9pMyj/giphy.gif', 'https://media.giphy.com/media/3o6Mb9oeV59vc1XeEw/giphy.gif']
+broke = ['https://media.giphy.com/media/1ppudqsvJAWPa63iLU/giphy.gif', 'https://media.giphy.com/media/123XfyrlS6mpEY/giphy.gif','https://media.giphy.com/media/3orifdO6eKr9YBdOBq/giphy.gif']
+spend = ['https://media.giphy.com/media/d3mmdNnW5hkoUxTG/giphy.gif', 'https://media.giphy.com/media/sITUXkRIDG14A/giphy.gif', 'https://media.giphy.com/media/l3V0B6ICVWbg8Xi5q/giphy.gif']
+rich = ['https://media.giphy.com/media/h0MTqLyvgG0Ss/giphy.gif', 'https://media.giphy.com/media/HChtj3gzcVsXK/giphy.gif', 'https://media.giphy.com/media/SsTcO55LJDBsI/giphy.gif']
+hello = ['https://media.giphy.com/media/dzaUX7CAG0Ihi/giphy.gif', 'https://media.giphy.com/media/Cmr1OMJ2FN0B2/giphy.gif', 'https://media.giphy.com/media/6yU7IF9L3950A/giphy.gif']
 
 @app.route('/sms', methods=['POST'])
 def sms():
     global status
     message_body = request.form['Body']
     message = str(message_body)
-    message = message.lower()
+    message = message.lower().strip(" ")
     resp = MessagingResponse()
     find_str = "find the price of"
-    length = length(message)
-    if message[0,16] == find_str:
-        tup = get_price(message[17,length-1])
+    length = len(message)
+    if message.startswith(find_str):
+        tup = get_price(message.split("price of")[1])
         if tup[1] == "n/a":
             resp.message("Couldn't find the product.")
-        else
-            resp.message("The price of " + tup[1] + " is $" + tup[0])
+        else:
+            resp.message("The price of " + tup[1] + " is $" + str(tup[0]))
+    elif message.startswith("can i afford"):
+        tup = get_price(message.split("afford")[1])
+        if tup[1] == "n/a":
+            temp = resp.message("Couldn't find the product.")
+        else:
+            string = "The price of " + tup[1] + " is $" + str(tup[0]) + "\n"
+            temp2 = check_if_enough_money.info()
+            bal = temp2.check_balance()
+            if(tup[0] >= bal/2):
+                string = string + "No, You Broke"
+                temp = resp.message(string)
+                temp.media(broke[random.randint(0,3)])
+            else:
+                string = string + "Sure Thing, You Rich"
+                temp = resp.message(string)
+                temp.media(spend[random.randint(0,3)])
     elif message == "find my bank account" or message == "find my account" or message == "find my bank account" and status == -1:
         resp.message("What is your first name?")
         status += 1
@@ -134,7 +135,12 @@ def sms():
     elif status == 4:
         temp = check_if_enough_money.info()
         if message == "check my balance" or message == "what's my balance" or message == "balance":
-            resp.message("Balance: $" + str(temp.check_balance()))
+            temp2 = resp.message("Balance: $" + str(temp.check_balance()))
+            if (temp.check_balance()>20000):
+                temp2.media(rich[random.randint(0,3)])
+            else:
+                temp2.media(need_money_img[random.randint(0,3)])
+
         elif message == "check my rewards" or message == "rewards":
             resp.message("Rewards balance: $" + str(temp.check_rewards()))
         elif message == "check my bills" or message == "bills":
@@ -153,7 +159,9 @@ def sms():
     elif message not in responses:
         resp.message("I don't understand. Please try 'Find my bank account' or 'Good to see you' or 'Find the price of x'")
     else:
-        resp.message(responses[message])
+        temp = resp.message(responses[message])
+        temp.media(hello[random.randint(0,3)])
+
     return str(resp)
 
 if __name__ == '__main__':
