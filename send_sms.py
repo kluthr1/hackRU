@@ -35,8 +35,17 @@ responses = {
     "it's been a while":"Yes, it has.",
     "whazzup":"Wassup!",
     "are you sure":"YES",
-    "yes":"No."
+    "yes":"No.",
+    "what's the weather like":"Idk have you looked outside?"
 }
+
+joke = ["What did Mississippi let Delaware? I don’t know, but Alaska!", 
+        "My wife is so negative. I remembered the car seat, the stroller, AND the diaper bag. Yet all she can talk about is how I forgot the baby.",
+        "Our wedding was so beautiful … Even the cake was in tiers.",
+        "I wouldn’t buy anything with velcro. It’s a total rip-off.",
+        "The shovel was a ground-breaking invention."]
+
+daily = ["Make some bread", "Get some money"]
 
 
 def get_price(r_string):
@@ -96,11 +105,11 @@ def sms():
             if(tup[0] >= bal/2):
                 string = string + "No, You Broke"
                 temp = resp.message(string)
-                temp.media(broke[random.randint(0,3)])
+                temp.media(broke[random.randint(0,2)])
             else:
                 string = string + "Sure Thing, You Rich"
                 temp = resp.message(string)
-                temp.media(spend[random.randint(0,3)])
+                temp.media(spend[random.randint(0,2)])
     elif message == "find my bank account" or message == "find my account" or message == "find my bank account" and status == -1:
         resp.message("What is your first name?")
         status += 1
@@ -137,9 +146,9 @@ def sms():
         if message == "check my balance" or message == "what's my balance" or message == "balance":
             temp2 = resp.message("Balance: $" + str(temp.check_balance()))
             if (temp.check_balance()>20000):
-                temp2.media(rich[random.randint(0,3)])
+                temp2.media(rich[random.randint(0,2)])
             else:
-                temp2.media(need_money_img[random.randint(0,3)])
+                temp2.media(need_money_img[random.randint(0,2)])
 
         elif message == "check my rewards" or message == "rewards":
             resp.message("Rewards balance: $" + str(temp.check_rewards()))
@@ -156,11 +165,18 @@ def sms():
             status = -1
         else:
             resp.message("Sorry, I do not understand. Try 'done' or 'check my balance'")
+    elif message == "tell me a joke":
+        temp3 = joke[random.randint(0,4)]
+        resp.message(temp3)
+    elif message == "what should i do today":
+        temp4 = daily[random.randint(0,1)]
+        resp.message(temp4)
     elif message not in responses:
         resp.message("I don't understand. Please try 'Find my bank account' or 'Good to see you' or 'Find the price of x'")
     else:
         temp = resp.message(responses[message])
-        temp.media(hello[random.randint(0,3)])
+        rand = random.randint(0,2)
+        temp.media(hello[rand])
 
     return str(resp)
 
