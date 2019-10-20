@@ -17,6 +17,7 @@ account_list = ''
 account_nickname_list = ''
 balance_endpoint = ''
 bill_endpoint = ''
+exists = 0
 # Need to get the following information from chatbot:
 # Name, which type they want, and the price of what they want to buy. Maybe to distinguish same names, include prompter for address
 # I need to loop through the list of customers and match the name.
@@ -47,8 +48,9 @@ class info:
         for x in account_list:
             if count == 0:
                 account_nickname_list = x['nickname']
+                count += 1
             else:
-                account_nickname_list += x['nickname']
+                account_nickname_list = account_nickname_list + " " + x['nickname']
 
 
     def find_account(self):
@@ -57,13 +59,18 @@ class info:
         for x in account_list:
             if x['nickname'].lower() == account_nickname:
                 account_id = x['_id']
-        return 1
+                exists = 1
+                break
+        if exists == 1:
+            return 1
+        else:
+            return 0
 
     def set_up_account_endpoints(self):
         global balance_endpoint
         global bill_endpoint
         balance_endpoint = url + "/accounts/" + account_id + "?key=" + apiKey
-        bill_endpoint = url + "/accounts/" + account_id + "/bills?key=" + apiKey\
+        bill_endpoint = url + "/accounts/" + account_id + "/bills?key=" + apiKey
 
     def check_balance(self):
         temp = requests.get(balance_endpoint)
@@ -78,10 +85,11 @@ class info:
     def check_bills(self):
         temp = requests.get(bill_endpoint)
         temp2 = temp.json()
-        return_string = []
+        return_string = ["",""]
         for x in temp2:
             if x['recurring_date'] == 1:
-                return_string.append("You have a recurring payment with " + x['nickname'] + " for $" + x['payment_amount'] + ".")
+                return_string.append("You have a recurring payment with " + x['nickname'] + " for $" + str(x['payment_amount']) + ".")
             elif x['status'] == "pending":
-                return_string.append("You have a pending bill with " + x['nickname'] + " for $" + x['payment_amount'] + ".")
+                return_string.append("You have a pending bill with " + x['nickname'] + " for $" + str(x['payment_amount']) + ".")
+        print(return_string)
         return return_string
