@@ -1,12 +1,10 @@
 from flask import Flask, request
 from twilio.twiml.messaging_response import Message, MessagingResponse
+import check_if_enough_money
 
 app = Flask(__name__)
 
 status = -1
-first_name = ""
-last_name = ""
-zip_code = ""
 
 responses = {
     "hi":"Hi!",
@@ -41,10 +39,6 @@ def pinfo():
 @app.route('/sms', methods=['POST'])
 def sms():
     global status
-    global first_name
-    global last_name
-    global zip_code
-    number = request.form['From']
     message_body = request.form['Body']
     message = str(message_body)
     message = message.lower()
@@ -53,16 +47,36 @@ def sms():
         resp.message("What is your first name?")
         status += 1
     elif status == 0:
-        first_name = message
+        check_if_enough_money.first_name = message
         resp.message("What is your last name?")
         status += 1
     elif status == 1:
-        last_name = message
+        check_if_enough_money.last_name = message
         resp.message("What your zip code?")
         status += 1
     elif status == 2:
-        zip_code = message
-        status = -1
+        check_if_enough_money.zip_code = message
+        temp = check_if_enough_money.info()
+        if temp.check_for_customer() == 1:
+            temp.get_accounts_list()
+            resp.message("Found you! Choose the account you would like to access:\n" + check_if_enough_money.account_nickname_list)
+            status += 1
+        else:
+            resp.message("Could not find you.")
+            status = -1
+    elif status == 3:
+        check_if_enough_money.account_nickname = message
+        if check_if_enough_money.find_account() == 1:
+            resp.message("Accessing the account...\nWhat do you want to do with it?")
+            status += 1
+        else:
+            resp.message("I couldn't find the account, run it by me again.")
+    elif status == 4:
+        if message == "check my balance" or message == "what's my balance" or message == "balance":
+            
+
+
+
     elif message not in responses:
         resp.message("I don't understand. Please try 'Find my bank account' or 'Good to see you'")
     else:
