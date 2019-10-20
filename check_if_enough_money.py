@@ -18,6 +18,7 @@ account_nickname_list = ''
 balance_endpoint = ''
 bill_endpoint = ''
 exists = 0
+post_url = "192.168.6.59:2000"
 # Need to get the following information from chatbot:
 # Name, which type they want, and the price of what they want to buy. Maybe to distinguish same names, include prompter for address
 # I need to loop through the list of customers and match the name.

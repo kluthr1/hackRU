@@ -47,7 +47,27 @@ joke = ["What did Mississippi let Delaware? I don’t know, but Alaska!",
 
 daily = ["Make some bread", "Get some money"]
 
-
+@app.route('/getaccount', methods=['POST'])
+def test():
+    check_if_enough_money.first_name = request.form['first_name']
+    check_if_enough_money.last_name = request.form['last_name']
+    check_if_enough_money.zip_code = request.form['zip_code']
+    other_class = check_if_enough_money.info()
+    result = other_class.check_for_customer()
+    if result == 1:
+        # GET request for getting a specific account
+        get_accounts = requests.get(url + "/customers/" + customer_id + "/accounts?key=" + apiKey)
+        account_list = get_accounts.json()
+        count = 0
+        for x in account_list:
+            if count == 0:
+                account_nickname_list = x['nickname']
+                count += 1
+            else:
+                account_nickname_list = account_nickname_list + " " + x['nickname']
+        return {"status": "ok", "account_list": account_nickname_list}
+    else:
+        return {"status": "failed"}
 def get_price(r_string):
     string= r_string.strip(" ")
     string  = ("%").join(string.split(" "))
@@ -181,4 +201,4 @@ def sms():
     return str(resp)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='192.168.6.59', port=5000)
