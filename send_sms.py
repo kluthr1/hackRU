@@ -92,7 +92,15 @@ def sms():
     message = str(message_body)
     message = message.lower()
     resp = MessagingResponse()
-    if message == "find my bank account" or message == "find my account" or message == "find my bank account" and status == -1:
+    find_str = "find the price of"
+    length = length(message)
+    if message[0,16] == find_str:
+        tup = get_price(message[17,length-1])
+        if tup[1] == "n/a":
+            resp.message("Couldn't find the product.")
+        else
+            resp.message("The price of " + tup[1] + " is $" + tup[0])
+    elif message == "find my bank account" or message == "find my account" or message == "find my bank account" and status == -1:
         resp.message("What is your first name?")
         status += 1
     elif status == 0:
@@ -143,12 +151,9 @@ def sms():
         else:
             resp.message("Sorry, I do not understand. Try 'done' or 'check my balance'")
     elif message not in responses:
-        resp.message("I don't understand. Please try 'Find my bank account' or 'Good to see you'")
+        resp.message("I don't understand. Please try 'Find my bank account' or 'Good to see you' or 'Find the price of x'")
     else:
         resp.message(responses[message])
-
-
-    
     return str(resp)
 
 if __name__ == '__main__':
