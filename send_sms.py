@@ -1,16 +1,50 @@
 from flask import Flask, request
 from twilio.twiml.messaging_response import Message, MessagingResponse
 import check_if_enough_money
-
+import pickle
 import json    # or `import simplejson as json` if on Python < 2.6
 import http.client
 import random
+from numpy import array
+from sklearn.ensemble import RandomForestRegressor
+
 
 
 app = Flask(__name__)
 
 status = -1
 
+loaded_model = RandomForestRegressor()
+cols = []
+try:
+    loaded_model = pickle.load(open("finalized_model.sav", 'rb'))
+    cols = open("new_final.csv").readline().split(",")
+    
+except:
+    asadsadf = 0
+
+def predict_arr(arr):
+    tarr = [str(x).lower() for x in arr]
+    final = [0 for x in range(len(cols)-1)] 
+    for i, x in enumerate(cols):
+        if x.startswith("country"):
+            final[i]=-1
+    final[0] = 750
+    final[cols.index("country_"+arr[0])] = 1
+    final[cols.index(arr[1])] = 1
+    final[1] = int(arr[2])/int(arr[3])
+    final[2] = int(arr[3])
+    for i, x in enumerate(cols):
+        for j,y in enumerate(tarr[4].split(",")):
+            if x in y or y in x:
+                final[i] = j
+
+    arr2 = [final]
+    num = loaded_model.predict(array(arr2))
+
+    return num2[0]
+    
+        
 responses = {
     "hi":"Hi!",
     "hello":"Hello!",
@@ -102,18 +136,43 @@ hello = ['https://media.giphy.com/media/dzaUX7CAG0Ihi/giphy.gif', 'https://media
 @app.route('/sms', methods=['POST'])
 def sms():
     global status
+    global loaded_model
     message_body = request.form['Body']
     message = str(message_body)
+    message2 = str(message)
     message = message.lower().strip(" ")
     resp = MessagingResponse()
     find_str = "find the price of"
     length = len(message)
+    print (message2)
     if message.startswith(find_str):
         tup = get_price(message.split("price of")[1])
         if tup[1] == "n/a":
             resp.message("Couldn't find the product.")
         else:
             resp.message("The price of " + tup[1] + " is $" + str(tup[0]))
+    elif message in responses:
+        temp = resp.message(responses[message])
+        rand = random.randint(0,2)
+        temp.media(hello[rand])
+    elif message == "tell me a joke" or "joke" in message:
+        temp3 = joke[random.randint(0,4)]
+        resp.message(temp3)
+    elif "toothpaste" in message2:
+        temp3 = predict_arr(message2.split("\n")[1:])
+        resp.message(str(temp3))
+    elif message == "what should i do today":
+        temp4 = daily[random.randint(0,1)]
+        resp.message(temp4)
+    elif  "budget" in message and ("$" in message or "dollars" in message):
+        if ("$" in message):
+            budget = (int) (message.split("$")[1].split(" ")[0])
+            temp = resp.message("GOOD Job Saving Money, Smart Human")
+
+        if ("dollars" in message):
+            budget = (int) (message.split("dollars")[0].split(" ")[-1])
+            temp = resp.message("GOOD Job Saving Money, Smart Human")
+
     elif message.startswith("can i afford"):
         tup = get_price(message.split("afford")[1])
         if tup[1] == "n/a":
@@ -122,15 +181,25 @@ def sms():
             string = "The price of " + tup[1] + " is $" + str(tup[0]) + "\n"
             temp2 = check_if_enough_money.info()
             bal = temp2.check_balance()
-            if(tup[0] >= bal/2):
+            if (tup[0] >= bal/2):
                 string = string + "No, You Broke"
                 temp = resp.message(string)
                 temp.media(broke[random.randint(0,2)])
-            else:
+            elif(budget == -1):
                 string = string + "Sure Thing, You Rich"
                 temp = resp.message(string)
                 temp.media(spend[random.randint(0,2)])
-    elif message == "find my bank account" or message == "find my account" or message == "find my bank account" and status == -1:
+            else:
+                if(tup[0] >= budget):
+                    string = string + "No, Your Budget is: " + str(budget)
+                    temp = resp.message(string)
+                    temp.media(broke[random.randint(0,2)])
+                else:      
+                    string = string + "YES You Can!, Your Budget is: " + str(budget)
+                    temp = resp.message(string)
+                    temp.media(spend[random.randint(0,2)])
+
+    elif message == "find my bank account" or message == "find my account" and status == -1:
         resp.message("What is your first name?")
         status += 1
     elif status == 0:
@@ -185,12 +254,6 @@ def sms():
             status = -1
         else:
             resp.message("Sorry, I do not understand. Try 'done' or 'check my balance'")
-    elif message == "tell me a joke":
-        temp3 = joke[random.randint(0,4)]
-        resp.message(temp3)
-    elif message == "what should i do today":
-        temp4 = daily[random.randint(0,1)]
-        resp.message(temp4)
     elif message not in responses:
         resp.message("I don't understand. Please try 'Find my bank account' or 'Good to see you' or 'Find the price of x'")
     else:
